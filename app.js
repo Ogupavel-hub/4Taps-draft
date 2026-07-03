@@ -20,7 +20,7 @@ const WIN_SCORE = 5;
 const MAX_ATTEMPTS = 3;
 const ATTEMPT_SECONDS = 5.5;
 const STORAGE_KEY = "draft-kick-state-v3";
-const PICKS_API_URL = "";
+const PICKS_API_URL = "https://script.google.com/macros/s/AKfycbwOHGgV7KQnqzGkGhnGEUAFgT0gGQ5kI5MHz_vlppkpghWen_7BGy8-Y3Xzjj2lapqg/exec";
 
 const POWER_LEVELS = [
   { min: 0, name: "Удар уставшего защитника", tone: "Нога еще не проснулась." },
