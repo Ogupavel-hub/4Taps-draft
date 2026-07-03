@@ -99,6 +99,21 @@ button {
   min-width: 0;
 }
 
+.brand-ball-button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.brand-ball-button:hover {
+  transform: scale(1.04);
+}
+
 .brand-ball {
   width: 38px;
   height: 38px;

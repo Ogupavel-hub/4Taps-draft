@@ -56,9 +56,7 @@ function createGameState() {
 function loadState() {
   const fallback = {
     currentUser: "",
-    users: Object.fromEntries(
-      USERS.map((name) => [name, { bestScore: null, team: "", tierOverride: false }]),
-    ),
+    users: createEmptyUsers(),
   };
 
   try {
@@ -89,6 +87,12 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function createEmptyUsers() {
+  return Object.fromEntries(
+    USERS.map((name) => [name, { bestScore: null, team: "", tierOverride: false }]),
+  );
 }
 
 function isRemotePicksEnabled() {
@@ -174,6 +178,36 @@ async function saveRemotePick(user, profile) {
     return true;
   } catch (error) {
     syncState.error = "Не удалось сохранить выбор в Google Sheet.";
+    return false;
+  } finally {
+    syncState.saving = false;
+    render();
+  }
+}
+
+async function resetRemotePicks() {
+  if (!isRemotePicksEnabled()) return true;
+
+  syncState.saving = true;
+  syncState.error = "";
+  render();
+
+  try {
+    const payload = new URLSearchParams({ action: "reset" });
+    const response = await fetch(PICKS_API_URL, {
+      method: "POST",
+      body: payload,
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (data?.ok === false) throw new Error(data.error || "Reset failed");
+    mergeRemotePicks(data);
+    saveState();
+    return true;
+  } catch (error) {
+    syncState.error = "Не удалось сбросить выборы в Google Sheet.";
     return false;
   } finally {
     syncState.saving = false;
@@ -301,7 +335,9 @@ function renderTopbar() {
   return `
     <header class="topbar">
       <div class="brand">
-        <img class="brand-ball" src="./assets/world-cup-ball.png" alt="" />
+        <button class="brand-ball-button" type="button" data-reset-picks aria-label="Сбросить выборы">
+          <img class="brand-ball" src="./assets/world-cup-ball.png" alt="" />
+        </button>
         <div>
           <h3>4Taps World cup</h3>
           <p class="muted">${state.currentUser}${profile.team ? ` выбрал: ${profile.team}` : ""}</p>
@@ -644,7 +680,29 @@ function bindCommonActions() {
       render();
     });
   }
+
+  const resetPicks = app.querySelector("[data-reset-picks]");
+  if (resetPicks) {
+    resetPicks.addEventListener("click", handleResetPicks);
+  }
 }
 
 render();
 loadRemotePicks();
+
+async function handleResetPicks() {
+  const confirmed = window.confirm("Вы точно хотите сбросить все выборы?");
+  if (!confirmed) return;
+
+  state.users = createEmptyUsers();
+  game = createGameState();
+  saveState();
+  render();
+
+  const saved = await resetRemotePicks();
+  if (saved) {
+    state.users = createEmptyUsers();
+    saveState();
+    render();
+  }
+}

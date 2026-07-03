@@ -7,6 +7,13 @@ function doGet() {
 
 function doPost(e) {
   const params = e.parameter || {};
+  const action = String(params.action || "").trim();
+
+  if (action === "reset") {
+    resetPicks();
+    return jsonResponse({ ok: true, ...getPicks() });
+  }
+
   const user = String(params.user || "").trim();
   const team = String(params.team || "").trim();
   const bestScore = params.bestScore === "" ? "" : Number(params.bestScore);
@@ -57,6 +64,15 @@ function getPicks() {
   });
 
   return { ok: true, users };
+}
+
+function resetPicks() {
+  const sheet = getSheet();
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, 5).clearContent();
+  }
 }
 
 function getSheet() {
