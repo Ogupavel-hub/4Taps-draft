@@ -1,0 +1,35 @@
+{
+  "description": "Manual source of truth for user team picks. Static GitHub Pages cannot write to this file automatically; update it in the repo when final picks need to be recorded.",
+  "users": {
+    "Дима": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    },
+    "Илья": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    },
+    "Саша": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    },
+    "Саша GMC": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    },
+    "Паша": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    },
+    "Андрей": {
+      "team": "",
+      "bestScore": null,
+      "tierOverride": false
+    }
+  }
+}

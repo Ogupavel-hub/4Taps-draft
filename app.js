@@ -18,7 +18,7 @@ const TEAMS = [
 
 const WIN_SCORE = 5;
 const MAX_ATTEMPTS = 3;
-const ATTEMPT_SECONDS = 4.5;
+const ATTEMPT_SECONDS = 5.5;
 const STORAGE_KEY = "draft-kick-state-v3";
 
 const POWER_LEVELS = [
@@ -175,7 +175,6 @@ function renderLogin() {
           </select>
         </div>
         <button class="primary" type="submit">Играть</button>
-        <p class="muted">Демо хранит выборы в этом браузере.</p>
       </form>
     </section>
   `;
@@ -297,7 +296,7 @@ function renderGame() {
 
           <div class="score-card">
             <h3>Правила</h3>
-            <p class="muted">Нажми старт и быстро кликай именно по мячу 4.5 секунды. Засчитываются только попадания по мячу.</p>
+            <p class="muted">Нажми старт и быстро кликай именно по мячу 5.5 секунды. Засчитываются только попадания по мячу.</p>
           </div>
         </aside>
       </div>
