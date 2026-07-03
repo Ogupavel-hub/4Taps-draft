@@ -596,6 +596,14 @@ input {
   color: #d9ffe9;
 }
 
+.sync-error {
+  border: 1px solid rgba(242, 54, 69, 0.36);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffd7dc;
+  background: rgba(242, 54, 69, 0.14);
+}
+
 .draft-table {
   display: grid;
   gap: 8px;

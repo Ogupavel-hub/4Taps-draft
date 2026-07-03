@@ -20,6 +20,7 @@ const WIN_SCORE = 5;
 const MAX_ATTEMPTS = 3;
 const ATTEMPT_SECONDS = 5.5;
 const STORAGE_KEY = "draft-kick-state-v3";
+const PICKS_API_URL = "";
 
 const POWER_LEVELS = [
   { min: 0, name: "Удар уставшего защитника", tone: "Нога еще не проснулась." },
@@ -34,6 +35,11 @@ const app = document.querySelector("#app");
 let state = loadState();
 let game = createGameState();
 let timerId = null;
+let syncState = {
+  loading: false,
+  saving: false,
+  error: "",
+};
 
 function createGameState() {
   return {
@@ -83,6 +89,96 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function isRemotePicksEnabled() {
+  return PICKS_API_URL.startsWith("https://");
+}
+
+async function loadRemotePicks() {
+  if (!isRemotePicksEnabled()) return;
+
+  syncState.loading = true;
+  syncState.error = "";
+  render();
+
+  try {
+    const response = await fetch(`${PICKS_API_URL}?t=${Date.now()}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    mergeRemotePicks(data);
+    saveState();
+  } catch (error) {
+    syncState.error = "Не удалось загрузить выборы из Google Sheet.";
+  } finally {
+    syncState.loading = false;
+    render();
+  }
+}
+
+function mergeRemotePicks(data) {
+  const remoteUsers = data?.users;
+  if (!remoteUsers || typeof remoteUsers !== "object") return;
+
+  USERS.forEach((user) => {
+    const remoteProfile = remoteUsers[user];
+    if (!remoteProfile || typeof remoteProfile !== "object") return;
+
+    state.users[user] = {
+      ...state.users[user],
+      bestScore: Number.isFinite(Number(remoteProfile.bestScore))
+        ? Number(remoteProfile.bestScore)
+        : state.users[user].bestScore,
+      team: TEAMS.some((team) => team.name === remoteProfile.team)
+        ? remoteProfile.team
+        : state.users[user].team,
+      tierOverride:
+        remoteProfile.tierOverride === true ||
+        remoteProfile.tierOverride === "true" ||
+        state.users[user].tierOverride,
+    };
+  });
+}
+
+async function saveRemotePick(user, profile) {
+  if (!isRemotePicksEnabled()) return true;
+
+  syncState.saving = true;
+  syncState.error = "";
+  render();
+
+  try {
+    const payload = new URLSearchParams({
+      user,
+      team: profile.team,
+      bestScore: String(profile.bestScore ?? ""),
+      tierOverride: String(Boolean(profile.tierOverride)),
+    });
+
+    const response = await fetch(PICKS_API_URL, {
+      method: "POST",
+      body: payload,
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (data?.ok === false) throw new Error(data.error || "Save failed");
+    mergeRemotePicks(data);
+    saveState();
+    return true;
+  } catch (error) {
+    syncState.error = "Не удалось сохранить выбор в Google Sheet.";
+    return false;
+  } finally {
+    syncState.saving = false;
+    render();
+  }
 }
 
 function currentProfile() {
@@ -212,10 +308,13 @@ function renderTopbar() {
         </div>
       </div>
       <div class="row">
+        ${syncState.loading ? `<span class="pill">Загрузка выборов...</span>` : ""}
+        ${syncState.saving ? `<span class="pill">Сохранение...</span>` : ""}
         <span class="pill">Порог: ${WIN_SCORE}</span>
         <button class="ghost" type="button" data-board>Выборы</button>
       </div>
     </header>
+    ${syncState.error ? `<div class="sync-error">${syncState.error}</div>` : ""}
   `;
 }
 
@@ -475,7 +574,7 @@ function renderPick() {
   }
 
   app.querySelectorAll("[data-team]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const teamName = button.dataset.team;
       const team = TEAMS.find((candidate) => candidate.name === teamName);
       if (!team || profile.team || isTeamTaken(teamName)) return;
@@ -483,6 +582,7 @@ function renderPick() {
 
       profile.team = teamName;
       saveState();
+      await saveRemotePick(state.currentUser, profile);
       game.screen = "board";
       render();
     });
@@ -547,3 +647,4 @@ function bindCommonActions() {
 }
 
 render();
+loadRemotePicks();
